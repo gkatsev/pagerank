@@ -28,54 +28,67 @@ function getSinks(outpages){
   return Object.keys(outpages).filter(function(e){ return outpages[e].empty() })
 }
 
+function preplexity(pr){
+  var p
+    , j
+    , preplex = 0
+  for(j = 0; j<pages.length; j++){
+    p = pages[j]
+    preplex += pr[p] * Math.log(1/pr[p])*log2conv
+  }
+  return Math.pow(2, preplex)
+}
+
+function preplexfour(preplex){
+  preplex = preplex.map(function(e){return e|0})
+  return preplex.length >=4 && preplex.every(function(e){return e==preplex[0]})
+}
+
 function pageRank(inpages, outpages){
   var page
+    , pages = Object.keys(inpages)
     , sinkPR
     , sinkpages = getSinks(outpages)
     , pageRank = {}
     , N = Object.keys(inpages).length
     , d = 0.85
     , i
+    , j
     , idx = 0
     , newPR = {}
     , inlinks
     , preplex = []
-    , preplexity = function(pr){
-      var p
-        , preplex = 0
-      for(p in pr){
-        preplex += pr[p] * Math.log(1/pr[p])*log2conv
-      }
-      return Math.pow(2, preplex)
-    }
-    , preplexfour = function(preplex){
-      console.log('preplex4')
-      preplex = preplex.map(function(e){return e|0})
-      return preplex.length >=4 && preplex.every(function(e){return e==preplex[0]})
-    }
+
+    Object.keys(outpages).forEach(function(el){
+      outpages[el] = outpages[el].size()
+    })
 
     for(page in inpages){
       pageRank[page] = 1/N
     }
 
     while(preplex.push(preplexity(pageRank)), !preplexfour(preplex.slice(-4))){
-      console.log(preplex.slice(-1))
+      console.log(preplex)
       sinkPR = 0
+      newPR = {}
       console.log('sinkpages', idx)
       for(i = 0; i<sinkpages.length; i++){
         sinkPR += pageRank[sinkpages[i]]
       }
       console.log('pages', idx)
-      for(page in inpages){
+      for(j = 0; j < pages.length; j++){
+        page = pages[j]
         newPR[page] = (1-d)/N
         newPR[page] += d*sinkPR/N
         inlinks = inpages[page]
         for(i = 0; i<inlinks.length; i++){
-          newPR[page] += d*pageRank[inlinks[i]]/outpages[inlinks[i]].size()
+          newPR[page] += d*pageRank[inlinks[i]]/outpages[inlinks[i]]
         }
       }
       console.log('copypr', idx)
-      for(page in inpages){
+      //pageRank = newPR
+      for(j = 0; j < pages.length; j++){
+        page = inpages[j]
         pageRank[page] = newPR[page]
       }
       idx++
