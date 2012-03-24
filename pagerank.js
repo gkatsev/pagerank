@@ -22,6 +22,7 @@
 // return PR
 var fs = require('fs')
   , Set = require('set')
+  , log2conv = 1/Math.log(2)
 
 function getSinks(outpages){
   return Object.keys(outpages).filter(function(e){ return outpages[e].empty() })
@@ -38,16 +39,33 @@ function pageRank(inpages, outpages){
     , idx = 0
     , newPR = {}
     , inlinks
+    , preplex = []
+    , preplexity = function(pr){
+      var p
+        , preplex = 0
+      for(p in pr){
+        preplex += pr[p] * Math.log(1/pr[p])*log2conv
+      }
+      return Math.pow(2, preplex)
+    }
+    , preplexfour = function(preplex){
+      console.log('preplex4')
+      preplex = preplex.map(function(e){return e|0})
+      return preplex.length >=4 && preplex.every(function(e){return e==preplex[0]})
+    }
 
     for(page in inpages){
       pageRank[page] = 1/N
     }
 
-    while(idx++ < 100){
+    while(preplex.push(preplexity(pageRank)), !preplexfour(preplex.slice(-4))){
+      console.log(preplex.slice(-1))
       sinkPR = 0
+      console.log('sinkpages', idx)
       for(i = 0; i<sinkpages.length; i++){
         sinkPR += pageRank[sinkpages[i]]
       }
+      console.log('pages', idx)
       for(page in inpages){
         newPR[page] = (1-d)/N
         newPR[page] += d*sinkPR/N
@@ -56,9 +74,11 @@ function pageRank(inpages, outpages){
           newPR[page] += d*pageRank[inlinks[i]]/outpages[inlinks[i]].size()
         }
       }
+      console.log('copypr', idx)
       for(page in inpages){
         pageRank[page] = newPR[page]
       }
+      idx++
     }
 
     return pageRank
@@ -99,6 +119,7 @@ function loadFile(path, cb){
 
 function main(path){
   loadFile(path, function(i,o){
+    console.log(Object.keys(i).length)
     var pr = pageRank(i,o)
     console.log(pr)
   })
