@@ -28,15 +28,17 @@ function getSinks(outpages){
   return Object.keys(outpages).filter(function(e){ return outpages[e].empty() })
 }
 
-function preplexity(pr){
+function preplexity(pr, pages){
   var p
     , j
     , preplex = 0
   for(j = 0; j<pages.length; j++){
-    p = pages[j]
-    preplex += pr[p] * Math.log(1/pr[p])*log2conv
+    p = pr[pages[j]]
+    preplex += p * Math.log(1/p)*log2conv
   }
-  return Math.pow(2, preplex)
+  preplex = Math.pow(2, preplex)
+  //console.log(preplex, pr[pages[0]])
+  return preplex
 }
 
 function preplexfour(preplex){
@@ -57,7 +59,9 @@ function pageRank(inpages, outpages){
     , idx = 0
     , newPR = {}
     , inlinks
+    , inlinkPR
     , preplex = []
+    , temp1, temp2
 
     Object.keys(outpages).forEach(function(el){
       outpages[el] = outpages[el].size()
@@ -67,28 +71,40 @@ function pageRank(inpages, outpages){
       pageRank[page] = 1/N
     }
 
-    while(preplex.push(preplexity(pageRank)), !preplexfour(preplex.slice(-4))){
-      console.log(preplex)
+    while(preplex.push(preplexity(pageRank, pages)), !preplexfour(preplex.slice(-4))){
+      ////console.log(preplex)
       sinkPR = 0
-      newPR = {}
-      console.log('sinkpages', idx)
+      //newPR = {}
       for(i = 0; i<sinkpages.length; i++){
         sinkPR += pageRank[sinkpages[i]]
       }
-      console.log('pages', idx)
       for(j = 0; j < pages.length; j++){
         page = pages[j]
         newPR[page] = (1-d)/N
+        //console.log('1-d/N',newPR[page])
         newPR[page] += d*sinkPR/N
+        //console.log('sinkPR',newPR[page])
         inlinks = inpages[page]
+        inlinkPR = 0
         for(i = 0; i<inlinks.length; i++){
-          newPR[page] += d*pageRank[inlinks[i]]/outpages[inlinks[i]]
+          temp1 = pageRank[inlinks[i]]||1/N
+          temp2 = outpages[inlinks[i]]||0
+          if(!temp1){
+            continue;
+          } else if(!temp2){
+            continue;
+          }
+          inlinkPR += d*temp1/temp2
+          //console.log(inlinkPR, temp1, temp2)
+          //newPR[page] += inlinkPR
         }
+        //console.log('inlinkPR', inlinkPR)
+        //console.log('inlinks',newPR[page])
+        newPR[page] += inlinkPR
+        //console.log('in+inpr', newPR[page])
       }
-      console.log('copypr', idx)
-      //pageRank = newPR
       for(j = 0; j < pages.length; j++){
-        page = inpages[j]
+        page = pages[j]
         pageRank[page] = newPR[page]
       }
       idx++
@@ -121,21 +137,32 @@ function loadFile(path, cb){
       }
     })
     
-    //for(var p in outlink){
-      //outlink[p] = outlink[p].get()
-    //}
-    //console.log("inlink",inlink)
-    //console.log("outlink",outlink)
     cb(inlink, outlink)
   })
 }
 
 function main(path){
   loadFile(path, function(i,o){
-    console.log(Object.keys(i).length)
+    //console.log(Object.keys(i).length)
     var pr = pageRank(i,o)
-    console.log(pr)
+      , pages = Object.keys(pr)
+      , i
+      , a = []
+    for(var i = 0; i< pages.length; i++){
+     a.push({page: pages[i], rank: pr[pages[i]]}) 
+    }
+    a.sort(function(a,b){ return b.rank-a.rank})
+    console.log(a[0])
+    console.log(a[a.length-1])
   })
 }
 
+module.exports = {
+  preplexity: preplexity
+, getSinks: getSinks
+, preplexfour: preplexfour
+, pageRank: pageRank
+, loadFile: loadFile
+, main: main
+}
 main(process.argv[2] || "simplegraph")
