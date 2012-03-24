@@ -107,4 +107,4 @@ function main(path){
   //})
 }
 
-main(process.argv[2] || "hw3.txt")
+main(process.argv[2] || "simplegraph")
