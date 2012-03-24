@@ -102,9 +102,6 @@ function main(path){
     var pr = pageRank(i,o)
     console.log(pr)
   })
-  //loadFile(path,function(i,o){
-    //console.log(getSinks(o))
-  //})
 }
 
 main(process.argv[2] || "simplegraph")
